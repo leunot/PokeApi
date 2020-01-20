@@ -1,17 +1,22 @@
 import React, { Component } from "react";
-import { Button, Card, Row, Col, Container, Form } from "react-bootstrap";
-import CardBackground from "./Images/hiclipart.com.png";
+import { Row, Col, Container } from "react-bootstrap";
+import BootstrapCard from "./BootstrapCard";
+import FormFilter from "./FormFilter";
 
 class Pokemon extends Component {
   state = {
+    PokemonData: {},
     items: [],
     pokemonImg: [],
     isLoaded: false,
-    pokemonImg: [],
-    pokemonTypes: []
+    pokemonTypes: [],
+    isFiltered: false,
+    oldPokemonData: {}
   };
 
   componentDidMount() {
+    let pokemonimages = [];
+    let pokemonTypes = [];
     //get the first 150 Pokemon name and API link
     fetch("https://pokeapi.co/api/v2/pokemon/?offset=0&limit=150")
       .then(res => res.json())
@@ -27,8 +32,13 @@ class Pokemon extends Component {
               //console.log(pokemonAtI);
               //this.state.items.results[pokemonAtI.id].newData[i] =
               //pokemonAtI.sprites;
-              this.state.pokemonImg[i] = pokemonAtI.sprites.front_default;
-              this.state.pokemonTypes[i] = pokemonAtI.types;
+
+              pokemonimages[i] = pokemonAtI.sprites.front_default;
+              pokemonTypes[i] = pokemonAtI.types;
+              this.setState({
+                pokemonImg: pokemonimages,
+                pokemonTypes: pokemonTypes
+              });
             })
             .then(() => {
               //Set the state to loaded on the last fetch and combine data
@@ -46,42 +56,117 @@ class Pokemon extends Component {
         }
       });
   }
+  saveType(val) {
+    let newState = this.state;
+
+    let filteredData = this.state.PokemonData.items.results.filter(function(
+      data,
+      index
+    ) {
+      let empty = true;
+      let filtered = false;
+      val.pokemonTypes.forEach(function(currentelement) {
+        //console.log(index);
+        // console.log(currentelement)
+        if (currentelement !== "") {
+          empty = false;
+          if (newState.pokemonTypes[index + 1].length === 2) {
+            if (
+              newState.pokemonTypes[index + 1][1].type.name.includes(
+                currentelement
+              )
+            ) {
+              filtered = true;
+            }
+          }
+          if (
+            newState.pokemonTypes[index + 1][0].type.name.includes(
+              currentelement
+            )
+          ) {
+            filtered = true;
+          }
+        }
+      });
+      if (empty) filtered = true;
+      return filtered;
+    });
+    this.setState({
+      oldPokemonData: filteredData,
+      filteredData: true
+    });
+
+    //this.state.PokemonData.items.results[1].name = "maybe";
+  }
 
   render() {
-    var { isLoaded, PokemonData } = this.state;
+    var { filteredData, oldPokemonData, isLoaded, PokemonData } = this.state;
     if (!isLoaded) {
       return <div>Loading...</div>;
-    } else {
-      console.log(PokemonData);
+    } else if (!filteredData) {
+      //console.log(this.state);
+      //console.log(this.state.PokemonData);
       return (
         <div>
           <Container>
             <Row>
+              <Col style={{ marginTop: "1%" }}>
+                <FormFilter data={{ saveType: this.saveType.bind(this) }} />
+              </Col>
+
               {PokemonData.items.results.map((element, index) => {
                 return (
-                  <Col key={element.name} style={{ marginTop: "1%" }}>
-                    <div key={PokemonData.pokemonImg[index + 1]}>
-                      <Card
-                        style={{
-                          width: "192px",
-                          backgroundImage: `url(${CardBackground})`,
-                          backgroundRepeat: "no-repeat",
-                          backgroundSize: "100% 100%",
-                          border: "none",
-                          borderRadius: "0.65rem"
-                        }}
-                      >
-                        <Card.Img
-                          variant="top"
-                          src={PokemonData.pokemonImg[index + 1]}
-                        />
-                        <Card.Body>
-                          <Card.Title>
-                            {index + 1 + ". " + element.name}
-                          </Card.Title>
-                          <Card.Text></Card.Text>
-                        </Card.Body>
-                      </Card>
+                  <Col
+                    className="float-left"
+                    key={element.name}
+                    style={{ marginTop: "1%" }}
+                  >
+                    <div>
+                      <BootstrapCard
+                        element={element}
+                        PokemonData={PokemonData}
+                        index={index}
+                      />
+                    </div>
+                  </Col>
+                );
+              })}
+
+              {/* {PokemonData.items.results.map((element, index) => {
+            return (
+              <div>
+                <img src={PokemonData.pokemonImg[index + 1]} />
+                <p>{element.name}</p>
+              </div>
+            );
+          })}
+          ; */}
+            </Row>
+          </Container>
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <Container>
+            <Row>
+              <Col style={{ marginTop: "1%", maxWidth: "228px" }}>
+                <FormFilter data={{ saveType: this.saveType.bind(this) }} />
+              </Col>
+
+              {oldPokemonData.map((element, index) => {
+                return (
+                  <Col
+                    className="float-left"
+                    key={element.name}
+                    style={{ marginTop: "1%", maxWidth: "228px" }}
+                  >
+                    <div style={{}}>
+                      <BootstrapCard
+                        element={element}
+                        PokemonData={PokemonData}
+                        index={index}
+                      />
                     </div>
                   </Col>
                 );
